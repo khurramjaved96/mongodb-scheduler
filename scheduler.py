@@ -134,23 +134,35 @@ while True:
                     with open('connection_string.txt', 'r') as f:
                         connection_string = f.read()
                     client = MongoClient(connection_string)
-                    # Log the failure
+                    # Handle failed experiment
                     doc = client['experiments']['queue'].find_one({"_id": doc_id})
                     if doc:
+                        # Create log entry
                         log_entry = {
                             "command": doc['command'],
                             "directory": doc.get('directory', '.'),
                             "return_code": p.returncode,
                             "timestamp": time.time(),
                             "priority": doc.get('priority', 0),
-                            "original_doc_id": doc_id
+                            "original_doc_id": doc_id,
+                            "status": "failed",
+                            "attempt_count": doc.get('attempt_count', 0) + 1,
+                            "error_message": f"Process failed with return code {p.returncode}"
                         }
                         client['experiments']['log'].insert_one(log_entry)
-                    # Reset status for retry
-                    client['experiments']['queue'].update_one(
-                        {"_id": doc_id},
-                        {"$set": {"status": 0}}
-                    )
+                        
+                        # # Move to failed collection
+                        # failed_doc = {
+                        #     **doc,  # Include all original document fields
+                        #     "return_code": p.returncode,
+                        #     "timestamp": time.time(),
+                        #     "attempt_count": doc.get('attempt_count', 0) + 1,
+                        #     "error_message": f"Process failed with return code {p.returncode}"
+                        # }
+                        # client['experiments']['failed'].insert_one(failed_doc)
+                        
+                        # Remove from queue
+                        client['experiments']['queue'].delete_one({"_id": doc_id})
                 del process_to_id[p]  # Remove the mapping
             
             # Get and start new command

@@ -1,0 +1,50 @@
+
+# SETUP INSTRUCTIONS:
+# 1. Replace YOUR_USERNAME with your actual username
+# 2. Replace /path/to/scheduler.py with the actual path to your scheduler.py file
+# 3. Replace /path/to/scheduler/directory with the directory containing scheduler.py
+#
+# To install the service:
+# 1. Copy this file to /etc/systemd/system/scheduler.service
+# 2. sudo systemctl daemon-reload
+# 3. sudo systemctl enable scheduler
+# 4. sudo systemctl start scheduler
+#
+# To check service status:
+# sudo systemctl status scheduler
+#
+# To view logs:
+# journalctl -u scheduler -f
+#
+# To stop the service:
+# sudo systemctl stop scheduler
+#
+# To disable automatic startup:
+# sudo systemctl disable scheduler
+#
+# To restart the service:
+# sudo systemctl restart scheduler
+
+[Unit]
+Description=MongoDB Scheduler Service
+After=network.target mongodb.service
+# Ensure MongoDB is running before starting the scheduler
+Requires=mongodb.service
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+# Replace with the absolute path to your scheduler.py
+ExecStart=/usr/bin/python3 /path/to/scheduler.py
+WorkingDirectory=/path/to/scheduler/directory
+# Automatically restart on failure
+Restart=always
+# Wait 10 seconds before restarting
+RestartSec=10
+# Maximum number of restarts within the time window
+StartLimitInterval=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target
+

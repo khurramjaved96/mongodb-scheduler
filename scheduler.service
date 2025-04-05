@@ -22,15 +22,6 @@
 #   - Shows live log output
 #   - Look for successful command executions
 #   - Monitor for any error messages
-#   - Check MongoDB connection status
-#
-# 3. Check MongoDB Collections:
-# mongo
-#   use experiments
-#   db.queue.find()  # Check pending jobs
-#   db.completed.find()  # Check completed jobs
-#   db.log.find()  # Check execution logs
-#   db.failed.find()  # Check failed jobs
 #
 # 4. Verify Process Running:
 # ps aux | grep scheduler.py
@@ -43,10 +34,6 @@
 #   - Check for any resource issues
 #
 # 6. Test Service Recovery:
-# sudo systemctl restart scheduler
-#   - Service should restart cleanly
-#   - Check status after restart
-#   - Verify logs show proper startup
 #
 # To stop the service:
 # sudo systemctl stop scheduler
@@ -59,9 +46,6 @@
 
 [Unit]
 Description=MongoDB Scheduler Service
-After=network.target mongodb.service
-# Ensure MongoDB is running before starting the scheduler
-Requires=mongodb.service
 
 [Service]
 Type=simple

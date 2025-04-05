@@ -1,5 +1,5 @@
 start = 0
-elem = 50
+elem = 10
 
 
 low = start
@@ -9,8 +9,8 @@ import random
 
 
 
-command = "./Count --config ../configs/BreakoutLong.json  --run "
-directory = "/Users/kjaved/Code/keen/kjaved/streaming_drl/build"
+command = "ls -l "
+directory = "/home/kjaved/"
 query = "[ "
 for i in range(low, high):
     query+='{ "command" : "' + command + str(i) + '"' +  ', "priority" : ' + str(priority) +', "rand" : '+ str(random.randint(0, 9000000)) +', "status" : 0, "directory" : "' + directory + '"},\n'

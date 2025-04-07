@@ -53,6 +53,8 @@ User=kjaved
 # Replace with the absolute path to your scheduler.py
 ExecStart=/home/kjaved/pytorch_env/bin/python /home/kjaved/mongodb-scheduler/scheduler.py
 WorkingDirectory=/home/kjaved/mongodb-scheduler/
+# Set environment variables
+Environment="OMP_NUM_THREADS=1"
 # Automatically restart on failure
 Restart=always
 # Wait 10 seconds before restarting

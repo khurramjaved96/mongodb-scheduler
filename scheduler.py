@@ -82,7 +82,7 @@ def cleanup():
     """
     Handles graceful shutdown by:
     1. Terminating all running processes
-    2. Moving all in-progress commands to the queue
+    2. Setting status of all in-progress commands to 0
     3. Exiting the script
     """
     print("\nCleaning up...")
@@ -101,12 +101,7 @@ def cleanup():
             connection_string = f.read()
         client = MongoClient(connection_string)
         for doc_id in process_to_id.values():
-            # Move document to completed collection with status 0
-            doc = client['experiments']['queue'].find_one({"_id": doc_id})
-            if doc:
-                doc['status'] = 0
-                client['experiments']['completed'].insert_one(doc)
-                client['experiments']['queue'].delete_one({"_id": doc_id})
+            client['experiments']['queue'].update_one({"_id": doc_id}, {"$set": {"status": 0}})
     sys.exit(0)
 
 def signal_handler(sig, frame):
@@ -119,6 +114,8 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)  # Handle Ctrl+C
 signal.signal(signal.SIGTERM, signal_handler)  # Handle termination signal
 
+
+none_command_attemps = 0
 # Main processing loop
 while True:
     counter = 0
@@ -143,25 +140,11 @@ while True:
                             "directory": doc.get('directory', '.'),
                             "return_code": p.returncode,
                             "timestamp": time.time(),
-                            "priority": doc.get('priority', 0),
                             "original_doc_id": doc_id,
                             "status": "failed",
-                            "attempt_count": doc.get('attempt_count', 0) + 1,
                             "error_message": f"Process failed with return code {p.returncode}"
                         }
                         client['experiments']['log'].insert_one(log_entry)
-                        
-                        # # Move to failed collection
-                        # failed_doc = {
-                        #     **doc,  # Include all original document fields
-                        #     "return_code": p.returncode,
-                        #     "timestamp": time.time(),
-                        #     "attempt_count": doc.get('attempt_count', 0) + 1,
-                        #     "error_message": f"Process failed with return code {p.returncode}"
-                        # }
-                        # client['experiments']['failed'].insert_one(failed_doc)
-                        
-                        # Remove from queue
                         client['experiments']['queue'].delete_one({"_id": doc_id})
                 del process_to_id[p]  # Remove the mapping
             
@@ -176,6 +159,13 @@ while True:
                 )
                 list_of_process[counter] = new_process
                 process_to_id[new_process] = doc_id  # Store the mapping
+            else:
+                if(process_to_id.keys() == []):
+                    none_command_attemps += 1
+                    time.sleep(3)
+                    # Empty queue for 10 attempts
+                    if(none_command_attemps > 10):
+                        cleanup()
             time.sleep(0.1)
         counter+=1
 

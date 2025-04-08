@@ -163,6 +163,7 @@ while True:
                 if(process_to_id.keys() == []):
                     none_command_attemps += 1
                     time.sleep(3)
+                    print("No command to run, sleeping for 3 seconds")
                     # Empty queue for 10 attempts
                     if(none_command_attemps > 10):
                         cleanup()

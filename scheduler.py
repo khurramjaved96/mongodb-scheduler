@@ -5,6 +5,18 @@ import json
 from pymongo import MongoClient
 import os
 import signal
+import argparse
+
+def parse_arguments():
+    """
+    Parse command line arguments.
+    
+    Returns:
+        argparse.Namespace: Parsed arguments
+    """
+    parser = argparse.ArgumentParser(description='MongoDB Scheduler Service')
+    parser.add_argument('--cpus', type=int, help='Override the number of CPUs to use')
+    return parser.parse_args()
 
 def getCommand():
     """
@@ -66,12 +78,16 @@ def MoveAndDeleteDocument(id):
         print(e)
 
 
+# Parse command line arguments
+args = parse_arguments()
+
 # Initialize process tracking
 list_of_process = []  # List to track all running processes
 process_to_id = {}  # Dictionary to map processes to their MongoDB document IDs
 
 # Determine number of CPU cores for parallel processing
-cpu_count = os.cpu_count()
+cpu_count = args.cpus if args.cpus else os.cpu_count()
+print(f"Using {cpu_count} CPUs")
 
 # Initialize process list with dummy processes
 for i in range(cpu_count):
@@ -152,10 +168,15 @@ while True:
             command, directory, doc_id = getCommand()
             if(command != "none"):
                 print(f"Running command in {directory}: {command}")
+                # Create environment with OMP_NUM_THREADS=1
+                process_env = os.environ.copy()
+                process_env["OMP_NUM_THREADS"] = "1"
+                
                 new_process = subprocess.Popen(
                     command,
                     shell=True,
-                    cwd=directory  # Set the working directory
+                    cwd=directory,  # Set the working directory
+                    env=process_env  # Set the environment variables
                 )
                 list_of_process[counter] = new_process
                 process_to_id[new_process] = doc_id  # Store the mapping
